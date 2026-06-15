@@ -1,0 +1,22 @@
+kind = "web"
+previewPath = "/"
+title = "ISRO AQI & HCHO Dashboard"
+version = "1.0.0"
+id = "artifacts/isro-dashboard"
+router = "path"
+
+[[integratedSkills]]
+name = "react-vite"
+version = "1.0.0"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 25295
+
+[services.development]
+run = "cd /home/runner/workspace/isro-aqi-hcho && streamlit run src/webapp/app.py --server.port 25295"
+
+[services.env]
+PORT = "25295"
+BASE_PATH = "/"
