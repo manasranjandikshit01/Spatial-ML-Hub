@@ -1,0 +1,1 @@
+- [ISRO Project layout](isro-project-layout.md) — Python project in isro-aqi-hcho/; must cd there before running modules; workflow runs from that dir.

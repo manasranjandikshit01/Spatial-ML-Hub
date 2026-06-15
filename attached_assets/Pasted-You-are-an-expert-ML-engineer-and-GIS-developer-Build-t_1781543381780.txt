@@ -1,0 +1,509 @@
+You are an expert ML engineer and GIS developer.
+Build the first full phase of an ISRO hackathon project with this problem statement:
+“Development of Surface AQI & Identification of HCHO Hotspots over India using Satellite Data”.
+
+1. Overall goal
+
+Build a complete, well‑structured repo that does the following:
+
+Objective‑1: Surface AQI estimation
+
+Create a data pipeline that takes as input:
+
+Columnar satellite pollutants (Sentinel‑5P/TROPOMI: NO2, SO2, CO, O3, HCHO).
+
+Aerosol Optical Depth from INSAT‑3D.
+
+Meteorological reanalysis (ERA5 or IMDAA or MERRA‑2: temperature, humidity, wind, etc.).
+
+Ground CPCB monitoring data (PM2.5, PM10, NO2, O3, SO2, CO).
+
+Build a training dataset that aligns all of these on a daily time scale and a common spatial grid over India.
+
+Train a deep learning model (start with a strong baseline and also provide a CNN‑LSTM version) that predicts surface PM2.5 (and optionally other pollutants) from the satellite + met features.
+
+Compute Indian AQI from the predicted pollutants and from observed CPCB data.
+
+Evaluate with RMSE, MAE, R, R² and generate daily gridded AQI maps over India.
+
+Objective‑2: HCHO hotspots during biomass burning
+
+Create a pipeline for Sentinel‑5P TROPOMI HCHO data over India.
+
+Integrate MODIS/VIIRS fire counts (FIRMS) and the same reanalysis wind fields.
+
+Identify biomass burning seasons (forest fires and crop residue burning) and detect HCHO hotspots using percentile thresholds and clustering.
+
+Analyse correlations between HCHO and fire counts; show how wind transports HCHO from fire regions to downwind areas.
+
+Produce maps and time series visualizations for Indo‑Gangetic Plain, forest fire zones, etc.
+
+Package everything into a repo with:
+
+Clean, modular Python code.
+
+Clear configuration files.
+
+A minimal web UI or dashboard (e.g., Streamlit) to showcase AQI and HCHO hotspot maps.
+
+Step‑by‑step documentation so a teammate can run it end‑to‑end.
+
+2. Repository structure to generate
+
+Create code for a repo with a structure like this (you can adjust but keep it organized):
+
+README.md
+
+requirements.txt
+
+env_example.yml (optional conda environment)
+
+config/
+
+paths.yaml – root paths for raw/processed/data, etc.
+
+aqi_training.yaml – model and feature configuration.
+
+hcho_hotspot.yaml – parameters for hotspots and correlation analysis.
+
+data/ (empty, with README explaining what will be stored)
+
+raw/
+
+interim/
+
+processed/
+
+notebooks/
+
+01_explore_cpcb.ipynb
+
+02_explore_satellite_reanalysis.ipynb
+
+03_model_results_and_plots.ipynb
+
+src/
+
+__init__.py
+
+data/
+
+download_cpcb.py
+
+download_tropomi.py
+
+download_insat_aod.py
+
+download_reanalysis.py
+
+download_firms_fire.py
+
+grid_definition.py
+
+build_dataset_aqi.py
+
+build_dataset_hcho.py
+
+features/
+
+make_features_aqi.py
+
+make_features_hcho.py
+
+models/
+
+baseline_ml.py (e.g., RandomForest/XGBoost for PM2.5)
+
+cnn_lstm_aqi.py
+
+train_aqi.py
+
+evaluate_aqi.py
+
+visualization/
+
+plot_maps.py
+
+plot_time_series.py
+
+plot_hotspots.py
+
+webapp/
+
+app.py (Streamlit or similar)
+
+scripts/
+
+run_build_aqi_dataset.sh
+
+run_train_aqi.sh
+
+run_hcho_hotspots.sh
+
+Make sure every module has docstrings and comments so it’s readable for a hackathon team.
+
+3. Data sources, direct links, and how to download
+
+In the README and in each download_*.py, write clear instructions and code to fetch or access these datasets (just write working example code; it’s okay if the user must add their own credentials/API keys).
+
+Ground CPCB air quality data
+
+Website: Central Pollution Control Board CAAQM portal.
+
+Main entry: https://airquality.cpcb.gov.in/ccr/#/caaqm-dashboard-all/caaqm-landing/caaqm-data-repository
+github
+
+Write a function that:
+
+Accepts station IDs, start date, end date.
+
+Downloads hourly data as CSV (or reads already-downloaded CSV) and aggregates to daily means.
+
+Outputs a cleaned CSV with columns like:
+
+station_id, station_name, city, state, lat, lon, date,
+
+pm25, pm10, no2, so2, o3, co,
+
+aqi_observed (computed from these pollutants using Indian AQI formula).
+
+Sentinel‑5P TROPOMI pollutants
+
+For NO2, SO2, CO, O3, HCHO use:
+
+Google Earth Engine datasets: COPERNICUS/S5P/OFFL/L3_NO2, .../SO2, .../CO, .../O3, .../HCHO.
+github
++1
+
+Or ESA/DLR download: https://download.geoservice.dlr.de/S5P_TROPOMI/files/L3/
+github
+
+Provide:
+
+Example Earth Engine Python API script that:
+
+Filters by date and India polygon.
+
+Selects the desired band (e.g., tropospheric_NO2_column_number_density) and quality mask.
+
+Reduces daily to a fixed grid (e.g., 0.1° grid) and exports GeoTIFF/NetCDF.
+
+Local download workflow (if not using GEE) using sentinelsat or HTTP requests.
+
+INSAT‑3D AOD
+
+Portal: MOSDAC INSAT‑3D AOD product: https://www.mosdac.gov.in/insat-3d-data-products
+isprs-archives.copernicus
+
+In download_insat_aod.py:
+
+Show how to manually download an AOD file (document folder path).
+
+Provide example code to read the AOD file (NetCDF/HDF), reproject to lat‑lon grid over India, and save as daily GeoTIFF or NetCDF.
+
+Output fields: lat, lon, date, insat_aod.
+
+Reanalysis meteorology (ERA5 or IMDAA or MERRA‑2)
+
+ERA5: https://cds.climate.copernicus.eu/
+nature
+
+IMDAA: https://nwp.ncmrwf.gov.in/reanalysis
+nature
+
+MERRA‑2: https://disc.gsfc.nasa.gov/datasets?project=MERRA-2
+pubmed.ncbi.nlm.nih
+
+In download_reanalysis.py:
+
+Use the CDS API example to download variables over India:
+
+2m_temperature, 2m_dewpoint, 10m_u_component_of_wind, 10m_v_component_of_wind, total_precipitation, surface_pressure, boundary_layer_height (where available).
+
+Resample to daily means; interpolate to the same grid as TROPOMI/INSAT.
+
+Output fields: lat, lon, date, plus one column per met variable.
+
+MODIS / VIIRS active fire data
+
+FIRMS: https://firms.modaps.eosdis.nasa.gov/active_fire/
+d-saikrishna.github
+
+In download_firms_fire.py:
+
+Show how to download CSV for a bounding box covering India and a date range.
+
+Convert point fire detections to a daily grid: count of fires in each grid cell per day.
+
+Output fields: lat, lon, date, fire_count.
+
+Optionally, example reference datasets / papers
+
+In README.md, list key papers and repos for context:
+
+Multi‑source remote sensing + hybrid deep learning for air quality prediction.
+nature
+
+INSAT‑3D AOD PM estimation over India.
+pubmed.ncbi.nlm.nih
++1
+
+TROPOMI HCHO over India and ozone precursor studies.
+d197for5662m48.cloudfront
++2
+
+Existing AQI prediction repos/ideas you can conceptually borrow from (no copying):.
+github
++2
+
+Only summarize briefly and avoid copying text or code from those papers/repos.
+
+4. Dataset schemas and column names
+
+Explicitly define and use consistent column names across the project.
+
+Common grid ID
+
+Decide a grid resolution (e.g., 0.1°).
+
+Each grid cell can be represented by: cell_id, lat_center, lon_center.
+
+Ground CPCB daily dataset (cpcb_daily.csv)
+Columns:
+
+station_id, station_name, city, state, lat, lon, cell_id, date
+
+pm25, pm10, no2, so2, o3, co
+
+aqi_observed
+
+Satellite + met gridded dataset (grid_daily_features.csv)
+Columns:
+
+cell_id, lat, lon, date
+
+no2_column (TROPOMI)
+
+so2_column
+
+co_column
+
+o3_column
+
+hcho_column
+
+insat_aod
+
+t2m (2 m temperature)
+
+rh2m (relative humidity; compute from T and dew point if needed)
+
+u10, v10 (10 m wind components)
+
+tp (total precipitation)
+
+sp (surface pressure)
+
+blh (boundary layer height)
+
+fire_count (daily fires in this grid cell, used mainly for HCHO module)
+
+Training dataset for AQI model (aqi_training_dataset.csv)
+
+Built by joining cpcb_daily.csv with grid_daily_features.csv on nearest cell_id and date.
+
+Columns:
+
+All satellite + met features above
+
+Target columns:
+
+pm25_target (and optionally pm10_target, no2_target, etc.)
+
+aqi_target (derived using Indian AQI formula from the ground pollutants).
+
+HCHO‑fire dataset (hcho_fire_daily_grid.csv)
+
+Gridded HCHO + fire counts + met data for all cells/days.
+
+Columns:
+
+cell_id, lat, lon, date
+
+hcho_column
+
+fire_count
+
+u10, v10, blh, tp (for transport/dispersion context)
+
+season (e.g., pre_monsoon, post_monsoon, etc.)
+
+Please implement all joins and aggregation steps in the build_dataset_*.py files with clear Pandas/NumPy code.
+
+5. Modelling details to implement
+
+Baseline model (baseline_ml.py)
+
+Train regression models on tabular features for pm25_target and aqi_target:
+
+RandomForestRegressor
+
+GradientBoostingRegressor or XGBoost (if you prefer)
+
+Split by time (e.g., train 2019–2021, test 2022) or by cities.
+
+Print metrics: RMSE, MAE, R², and correlation for each pollutant and for AQI.
+
+CNN‑LSTM model (cnn_lstm_aqi.py, train_aqi.py)
+
+Build a spatio‑temporal CNN‑LSTM model for PM2.5 prediction:
+
+Inputs: a sequence of T days of multi‑channel 2D grids (channels = satellite + met).
+
+CNN layers to extract spatial features per day, then LSTM (or ConvLSTM2D) to capture temporal evolution.
+
+Output: predicted PM2.5 grid for day T+1.
+
+Provide a data loader that:
+
+Reads grid_daily_features.csv, reshapes it into 4D tensors (time, channels, H, W) for a chosen bounding box over India.
+
+Produces training samples as sliding windows.
+
+Include training loop, validation splitting, checkpoint saving, and plotting of loss curves.
+
+AQI computation
+
+Implement a utility function compute_indian_aqi(pollutant_dict) that:
+
+Uses the official Indian AQI breakpoints for PM2.5, PM10, NO2, SO2, O3, CO.
+
+Returns the overall AQI (max of sub‑indices) and the dominant pollutant.
+
+Use this both for ground observations and for model predictions.
+
+Spatial AQI maps
+
+In plot_maps.py, write functions that:
+
+Take gridded predictions or observations and plot India maps using cartopy or geopandas.
+
+Generate daily or seasonal mean maps of predicted AQI.
+
+HCHO hotspot detection (make_features_hcho.py, plot_hotspots.py)
+
+Use hcho_fire_daily_grid.csv to:
+
+Compute seasonal mean HCHO per grid cell.
+
+Compute percentile thresholds (e.g., 90th/95th) and flag hotspots.
+
+Optionally run clustering (e.g., KMeans or DBSCAN) on [mean HCHO, fire_count] to identify hotspot clusters.
+
+For each region (e.g., Indo‑Gangetic Plain, central India forests, NE India):
+
+Extract time series of mean HCHO and fire_count.
+
+Compute Pearson correlation including lagged correlation (0–3 days).
+
+Plot:
+
+Maps of seasonal HCHO with hotspot cells outlined.
+
+Maps of fire density.
+
+Time series plots of HCHO vs fire_count, including correlation values.
+
+Maps with wind vectors overlaid during high HCHO episodes (using u10, v10).
+
+6. Web app / dashboard
+
+Build a small but complete Streamlit app in src/webapp/app.py that allows a user to:
+
+Select a date range and layer type (e.g., “Predicted AQI”, “Observed AQI (stations)”, “HCHO hotspots”, “Fire counts”).
+
+Visualize AQI maps as colored rasters on an India basemap.
+
+Visualize HCHO hotspots and fire locations.
+
+Show a time series for a selected city or region (dropdown or click on map).
+
+The app should:
+
+Load precomputed NetCDF/CSV files from data/processed.
+
+Have clear instructions on how to run: e.g., streamlit run src/webapp/app.py.
+
+7. Step‑by‑step guidance text
+
+In README.md, write a clear, numbered, step‑by‑step guide for a new team member. For example:
+
+Create environment: conda env create -f env_example.yml or pip install -r requirements.txt.
+
+Configure paths in config/paths.yaml to point to data/raw, data/processed.
+
+Download data:
+
+Run python -m src.data.download_cpcb --start 2019-01-01 --end 2022-12-31.
+
+Run python -m src.data.download_tropomi --start ... etc.
+
+Run python -m src.data.download_insat_aod ....
+
+Run python -m src.data.download_reanalysis ....
+
+Run python -m src.data.download_firms_fire ....
+
+Build datasets:
+
+python -m src.data.build_dataset_aqi
+
+python -m src.data.build_dataset_hcho
+
+Train and evaluate AQI model:
+
+python -m src.models.train_aqi --config config/aqi_training.yaml
+
+python -m src.models.evaluate_aqi --config config/aqi_training.yaml
+
+Generate maps and plots:
+
+python -m src.visualization.plot_maps
+
+python -m src.visualization.plot_hotspots
+
+Run the web app:
+
+streamlit run src/webapp/app.py
+
+Explicitly write these instructions in the README that you generate.
+
+8. Coding style and constraints
+
+Use Python 3.10+.
+
+Use common libraries: xarray, netCDF4, rasterio, geopandas, shapely, numpy, pandas, matplotlib, cartopy or contextily, scikit-learn, pytorch or tensorflow, streamlit.
+
+Make the code runnable in stages; do not assume the full India dataset is already downloaded. Use small mock examples where needed.
+
+Respect copyright: do not copy code from papers or GitHub; instead, write new code following common patterns.
+
+9. Deliverables from you (Claude)
+
+All source code files and example configs for the described repo, with correct folder paths.
+
+A detailed README.md explaining:
+
+Project overview in simple language.
+
+Data sources and download steps with the URLs listed above.
+
+Column names of each dataset and how they are created.
+
+Exact commands to run data preparation, training, evaluation, plotting, and the web UI.
+
+Suggestions for future improvements (more advanced models, uncertainty estimation, more pollutants).
+
+Focus on writing clean, logically structured, end‑to‑end code that a hackathon team can run and extend, even if they only download a subset of the data at first.
+
+If anything in the problem is ambiguous, make reasonable assumptions and document them clearly in comments and in the README.

@@ -1,0 +1,55 @@
+
+# HCHO Hotspot Detection Configuration
+
+# Seasonal definitions (month numbers)
+seasons:
+  pre_monsoon: [3, 4, 5]       # March–May
+  monsoon: [6, 7, 8, 9]        # June–September
+  post_monsoon: [10, 11]       # October–November (crop residue burning)
+  winter: [12, 1, 2]           # December–February
+
+# Hotspot thresholds
+hotspot:
+  percentile: 90               # Flag cells above this percentile
+  min_fire_count: 3            # Min fires/day to be considered fire-affected
+  cluster_method: "dbscan"     # "kmeans" | "dbscan"
+  dbscan_eps: 1.5              # DBSCAN neighbourhood in grid cells
+  dbscan_min_samples: 4
+  kmeans_n_clusters: 8
+
+# Correlation analysis
+correlation:
+  lag_days: [0, 1, 2, 3]       # Lag days for cross-correlation
+  regions:
+    igp:                        # Indo-Gangetic Plain
+      lat_min: 23.0
+      lat_max: 30.0
+      lon_min: 75.0
+      lon_max: 90.0
+      name: "Indo-Gangetic Plain"
+    northeast:
+      lat_min: 23.0
+      lat_max: 28.0
+      lon_min: 90.0
+      lon_max: 97.5
+      name: "Northeast India"
+    central_forest:
+      lat_min: 18.0
+      lat_max: 25.0
+      lon_min: 77.0
+      lon_max: 87.0
+      name: "Central India Forests"
+    punjab_haryana:
+      lat_min: 28.0
+      lat_max: 32.0
+      lon_min: 73.0
+      lon_max: 78.0
+      name: "Punjab-Haryana"
+
+# Visualization settings
+visualization:
+  cmap_hcho: "YlOrRd"
+  cmap_fire: "hot_r"
+  cmap_aqi: "RdYlGn_r"
+  dpi: 150
+  figure_size: [12, 8]

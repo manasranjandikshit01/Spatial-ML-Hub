@@ -1,0 +1,44 @@
+
+# Root data directory paths
+data:
+  root: "data"
+  raw: "data/raw"
+  interim: "data/interim"
+  processed: "data/processed"
+
+# Sub-directories for each dataset
+raw:
+  cpcb: "data/raw/cpcb"
+  tropomi: "data/raw/tropomi"
+  insat_aod: "data/raw/insat_aod"
+  reanalysis: "data/raw/reanalysis"
+  firms: "data/raw/firms"
+
+processed:
+  cpcb_daily: "data/processed/cpcb_daily.csv"
+  grid_daily_features: "data/processed/grid_daily_features.csv"
+  aqi_training: "data/processed/aqi_training_dataset.csv"
+  hcho_fire: "data/processed/hcho_fire_daily_grid.csv"
+  gridded_predictions: "data/processed/gridded_predictions"
+
+models:
+  root: "models"
+  baseline: "models/baseline"
+  cnn_lstm: "models/cnn_lstm"
+
+# India bounding box
+india_bbox:
+  lon_min: 68.0
+  lon_max: 97.5
+  lat_min: 8.0
+  lat_max: 37.5
+
+# Grid resolution in degrees
+grid_resolution: 0.1
+
+# Date range defaults
+date_range:
+  train_start: "2019-01-01"
+  train_end: "2021-12-31"
+  test_start: "2022-01-01"
+  test_end: "2022-12-31"

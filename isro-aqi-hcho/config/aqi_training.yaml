@@ -1,0 +1,80 @@
+
+# AQI Model Training Configuration
+
+model:
+  type: "cnn_lstm"          # "baseline" | "cnn_lstm"
+  target: "pm25"            # "pm25" | "aqi" | "pm10" | "no2"
+  sequence_length: 7        # Days of input history for CNN-LSTM
+  prediction_horizon: 1     # Days ahead to predict
+
+features:
+  satellite:
+    - no2_column
+    - so2_column
+    - co_column
+    - o3_column
+    - hcho_column
+    - insat_aod
+  meteorological:
+    - t2m
+    - rh2m
+    - u10
+    - v10
+    - tp
+    - sp
+    - blh
+
+targets:
+  - pm25_target
+  - aqi_target
+
+# Baseline ML settings
+baseline:
+  models:
+    - name: "RandomForest"
+      params:
+        n_estimators: 200
+        max_depth: 15
+        min_samples_split: 5
+        random_state: 42
+        n_jobs: -1
+    - name: "GradientBoosting"
+      params:
+        n_estimators: 200
+        max_depth: 6
+        learning_rate: 0.05
+        random_state: 42
+  cv_folds: 5
+
+# CNN-LSTM settings
+cnn_lstm:
+  spatial:
+    img_height: 30           # Grid cells in latitude dimension
+    img_width: 30            # Grid cells in longitude dimension
+    in_channels: 11          # Number of feature channels
+  architecture:
+    cnn_filters: [32, 64]
+    cnn_kernel: 3
+    lstm_hidden: 128
+    lstm_layers: 2
+    dropout: 0.3
+    fc_hidden: 64
+  training:
+    epochs: 50
+    batch_size: 16
+    learning_rate: 0.001
+    weight_decay: 0.0001
+    patience: 10             # Early stopping patience
+    scheduler_step: 10
+    scheduler_gamma: 0.5
+    val_split: 0.15
+    test_split: 0.15
+
+evaluation:
+  metrics:
+    - rmse
+    - mae
+    - r2
+    - pearson_r
+  generate_maps: true
+  map_output_dir: "data/processed/aqi_maps"

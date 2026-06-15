@@ -1,0 +1,35 @@
+name: isro-aqi-hcho
+channels:
+  - conda-forge
+  - defaults
+
+dependencies:
+  - python=3.11
+  - pip
+  - numpy>=1.24
+  - pandas>=2.0
+  - scipy>=1.10
+  - xarray>=2023.1
+  - netCDF4>=1.6
+  - h5py>=3.8
+  - geopandas>=0.13
+  - shapely>=2.0
+  - rasterio>=1.3
+  - cartopy>=0.21          # requires libgeos-dev
+  - matplotlib>=3.7
+  - seaborn>=0.12
+  - plotly>=5.14
+  - folium>=0.14
+  - scikit-learn>=1.3
+  - pyyaml>=6.0
+  - tqdm>=4.65
+  - requests>=2.31
+  - pip:
+    - torch>=2.0            # use torch --index-url for GPU builds
+    - torchvision>=0.15
+    - streamlit>=1.25
+    - streamlit-folium>=0.13
+    - cdsapi>=0.6
+    - sentinelsat>=1.2
+    - # earthengine-api>=0.1.360   # uncomment to use GEE
+    - # xgboost>=1.7               # uncomment for XGBoost baseline
