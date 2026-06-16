@@ -5,8 +5,9 @@ data:
   raw: "data/raw"
   interim: "data/interim"
   processed: "data/processed"
+  static: "data/interim/static"
 
-# Sub-directories for each dataset
+# Sub-directories for each raw dataset
 raw:
   cpcb: "data/raw/cpcb"
   tropomi: "data/raw/tropomi"
@@ -14,19 +15,25 @@ raw:
   reanalysis: "data/raw/reanalysis"
   firms: "data/raw/firms"
 
+# Final model-ready files
 processed:
   cpcb_daily: "data/processed/cpcb_daily.csv"
   grid_daily_features: "data/processed/grid_daily_features.csv"
   aqi_training: "data/processed/aqi_training_dataset.csv"
+  aqi_features: "data/processed/aqi_features.csv"
   hcho_fire: "data/processed/hcho_fire_daily_grid.csv"
+  hcho_hotspot_features: "data/processed/hcho_hotspot_features.csv"
+  hcho_geojson: "data/processed/hcho_hotspot_clusters.geojson"
+  hcho_top_regions: "data/processed/hcho_top_hotspot_regions.csv"
   gridded_predictions: "data/processed/gridded_predictions"
+  cnn_lstm_predictions: "data/processed/cnn_lstm_predictions.csv"
 
 models:
   root: "models"
   baseline: "models/baseline"
   cnn_lstm: "models/cnn_lstm"
 
-# India bounding box
+# India bounding box (WGS-84)
 india_bbox:
   lon_min: 68.0
   lon_max: 97.5
@@ -36,9 +43,58 @@ india_bbox:
 # Grid resolution in degrees
 grid_resolution: 0.1
 
+# ---------------------------------------------------------------------------
 # Date range defaults
+# ---------------------------------------------------------------------------
 date_range:
+  # Full historical range (when real data is available)
+  default_start: "2018-01-01"
+  default_end: "2024-12-31"
+  # Train / test split
   train_start: "2019-01-01"
   train_end: "2021-12-31"
   test_start: "2022-01-01"
   test_end: "2022-12-31"
+
+# ---------------------------------------------------------------------------
+# Dev / debug mode settings — faster iteration, smaller spatial subset
+# ---------------------------------------------------------------------------
+dev_mode:
+  enabled: false           # Set to true to use dev settings below
+  years: ["2022"]          # Only process this calendar year
+  lat_subset:
+    min: 23.0              # IGP only
+    max: 30.0
+  lon_subset:
+    min: 75.0
+    max: 90.0
+  max_samples: 50000       # Cap rows for quick debug runs
+
+# ---------------------------------------------------------------------------
+# Storage format
+#   "csv"     — human-readable, universally compatible (default)
+#   "parquet" — faster I/O and smaller files for large grids (requires pyarrow)
+# ---------------------------------------------------------------------------
+storage_format: "csv"
+
+# ---------------------------------------------------------------------------
+# Optional extra features
+# ---------------------------------------------------------------------------
+extra_features:
+  # 850 hPa wind components from ERA5 (requires extra CDS download)
+  use_850hpa_winds: false
+
+  # ESA CCI land cover fractions (requires GeoTIFF from ELIE/UCL)
+  use_land_cover: false
+
+  # WorldPop gridded population density
+  use_population: false
+
+  # SRTM 90 m elevation (mean per 0.1° cell)
+  use_elevation: false
+
+  # TROPOMI quality assurance threshold (0–1; 0.5 = standard science quality)
+  tropomi_min_qa: 0.5
+
+  # Maximum cloud radiance fraction for TROPOMI pixel acceptance
+  max_cloud_fraction: 0.5

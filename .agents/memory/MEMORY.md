@@ -1,1 +1,3 @@
 - [ISRO Project layout](isro-project-layout.md) — Python project in isro-aqi-hcho/; must cd there before running modules; workflow runs from that dir.
+- [ISRO Dashboard routing](isro-dashboard-routing.md) — Streamlit on port 25295; always at "/" path; never change port without updating both .streamlit/config.toml AND artifact.toml together.
+- [ISRO V3 architecture decisions](isro-v3-decisions.md) — ConvLSTM vs CNNLSTM; build_model() factory; rolling features require sort by cell_id+date first; spatial context uses scipy.ndimage.uniform_filter via pivot+melt.

@@ -1,0 +1,329 @@
+You are an expert ML engineer, MLOps engineer, GIS developer, and production engineer working inside the existing isro-aqi-hcho repo you already built and upgraded to V2.
+Your new task: build Version 3, which is as close as possible to a production‑ready, competition‑grade system for the ISRO hackathon:
+
+Fix the Streamlit interface / routing issue so the dashboard reliably shows.
+
+Improve robustness, efficiency, and code quality across the project.
+
+Extend the system to support more datasets and longer time ranges.
+
+Enhance the ML stack (feature engineering, models, evaluation).
+
+Make deployment and usage extremely clear and simple.
+
+Please keep and improve existing code; do not delete working functionality without replacing it with something better and documented.
+
+1. Fix the Streamlit / interface problem
+
+Inspect:
+
+src/webapp/app.py
+
+config.toml (Streamlit config)
+
+any artifact.toml / Replit run configuration / replit.md that controls how the app is started.
+
+Make the Streamlit app robust and deterministic:
+
+Ensure the app listens on the port expected by the Replit artifact configuration.
+
+If needed, set server.port and server.address inside Streamlit config, and explain in comments.
+
+Add a small “health check” endpoint or a simple top‑level print so we know app booted successfully.
+
+In README.md, add a clear “Debugging the dashboard” section with:
+
+Common errors (blank page, DNS error, port mismatch).
+
+Steps to fix (restart app, check logs, confirm port).
+
+After making changes, update any run scripts so a single command like
+streamlit run src/webapp/app.py works reliably in a local environment.
+
+2. More data and richer feature set
+
+Extend support for additional datasets and more years, and update the pipelines accordingly.
+
+Multi‑year capability
+
+Ensure all download_*.py and build_dataset_*.py scripts accept a date range via CLI arguments and config.
+
+Update config/paths.yaml or aqi_training.yaml to include:
+
+A default multi‑year range (e.g., 2018–2024).
+
+Flags for “dev mode” (e.g., only one year, or smaller spatial subset).
+
+Make sure dataset builders can append new years to existing processed data without duplicating rows (use checks or unique keys on (cell_id, date) or station/date).
+
+Additional predictors / datasets
+
+Add code paths (functions and config) for optional extra features, such as:
+
+Extra meteorology:
+
+850 hPa winds, geopotential height, relative humidity
+
+Land cover / elevation (e.g., static raster layer)
+
+Population density (for exposure‑weighted AQI maps) – optional but prepared in code.
+
+Implement these as separate feature modules (e.g., src/data/download_static_layers.py, src/features/add_static_features.py) and wire them into build_dataset_aqi.py with config flags:
+
+use_land_cover: true/false
+
+use_population: true/false.
+
+Update dataset schemas and data/README.md to include these new columns.
+
+Quality flags and masks
+
+In download_tropomi.py and related code, ensure that:
+
+Quality assurance flags (QA) and cloud fraction are used to filter low‑quality pixels.
+
+This is configurable via config/aqi_training.yaml (e.g., tropomi_min_qa, max_cloud_fraction).
+
+Log how many pixels / rows are filtered for transparency.
+
+Efficient storage formats
+
+Where appropriate, switch from CSV to Parquet for large intermediate tables (grid_daily_features, aqi_training_dataset).
+
+Implement reading/writing via pandas with a simple config toggle: storage_format: csv|parquet.
+
+Ensure the notebooks can handle both formats (detect extension).
+
+3. Stronger models and ML pipeline
+
+Improve the models and training/evaluation pipeline to be closer to production quality.
+
+Feature engineering
+
+In make_features_aqi.py, add:
+
+Temporal features:
+
+Day of year (sin/cos), month, weekday/weekend.
+
+Rolling means of key pollutants / AOD (e.g., 3‑day, 7‑day rolling PM2.5, AOD, NO2 if available).
+
+Spatial context features:
+
+Maybe neighbor averaging: average of satellite features over a small window (3x3 grid) around each cell (vectorized).
+
+Update data/README.md and notebook 02_explore_satellite_reanalysis.ipynb to show and explain these new features.
+
+Baseline model enhancements
+
+In baseline_ml.py:
+
+Add at least one more strong model:
+
+e.g., XGBoost or LightGBM (if allowed by dependency constraints).
+
+Make hyperparameter search configurable per model in aqi_training.yaml.
+
+Add cross‑validation by city and by year and record metrics for each split.
+
+Save a leaderboard CSV summarizing all model runs (model name, hyperparameters, metrics).
+
+Neural model improvements
+
+In cnn_lstm_aqi.py and train_aqi.py:
+
+Add an option for ConvLSTM2D or a U‑Net‑like encoder–decoder (you can implement a simple version).
+
+Implement a config‑driven model factory, e.g., model_type: cnn_lstm | convlstm | unet_lstm.
+
+Add dropout, batch normalization, and weight decay options via config.
+
+Implement mixed‑precision training (e.g., torch.cuda.amp.autocast) when GPU is available.
+
+Implement gradient clipping to stabilize training.
+
+Extend the evaluation to:
+
+Compute spatially resolved metrics (per region: IGP, South India, NE India).
+
+Save metric maps (e.g., RMSE per grid cell).
+
+Model artifacts and versioning
+
+Standardize model saving into models/ folder with clear naming:
+
+baseline_rf_{year_range}_{featureset}.joblib
+
+cnn_lstm_{year_range}_{res}_{featureset}.pt
+
+Create a small models/README.md listing:
+
+How each model was trained (data period, features).
+
+Where the config snapshot is stored.
+
+Ensure Streamlit can switch between models by reading this metadata.
+
+Evaluation & diagnostics
+
+Update evaluate_aqi.py and notebooks/03_train_baseline_and_cnn_lstm.ipynb to:
+
+Plot observed vs predicted per AQI category (Good, Satisfactory, etc.).
+
+Show confusion‑like visual for misclassification between AQI categories.
+
+Compute metrics separately for different seasons and regions.
+
+4. HCHO hotspot module improvements
+
+In build_dataset_hcho.py and make_features_hcho.py:
+
+Add configurable seasons (pre‑monsoon, monsoon, post‑monsoon, winter) and assign each date to a season.
+
+Implement additional features: e.g., background HCHO (seasonal mean) vs anomaly (daily minus seasonal mean).
+
+In plot_hotspots.py and 04_hcho_hotspots_and_fire.ipynb:
+
+Add:
+
+Hotspot persistence metrics (how many days per season a cell is hotspot).
+
+Simple ranking of regions by average HCHO anomaly during biomass burning periods.
+
+Export a summary table (CSV) listing top N hotspot regions with their stats (mean HCHO, fire correlation, main wind direction).
+
+Add a function to export a GeoJSON of hotspot polygons (e.g., DBSCAN clusters) for easy visualization in other tools or web maps.
+
+5. Production readiness & reliability
+
+CLI interface
+
+Add a single top‑level CLI in scripts/ (e.g., run_pipeline.py or make.py) that provides commands:
+
+download_all – orchestrates all data downloads based on config.
+
+build_datasets – runs both AQI and HCHO dataset builders.
+
+train_baseline – trains baseline models.
+
+train_deep – trains CNN‑LSTM/ConvLSTM.
+
+export_for_dashboard – prepares all files needed by Streamlit.
+
+Use argparse or click with helpful --help output.
+
+Logging and monitoring
+
+Ensure logging_utils.py is used by:
+
+All data download scripts
+
+Dataset builders
+
+Training / evaluation scripts
+
+Log:
+
+Start/end times
+
+Number of records processed
+
+Important configuration parameters (e.g., train years, grid resolution).
+
+Config validation
+
+Add a small utility (e.g., src/utils/config_utils.py) that:
+
+Validates that required keys exist in YAML configs.
+
+Provides default values where missing.
+
+Raises clear errors if essential values are invalid.
+
+Resource control
+
+Add config options for:
+
+Max CPU cores used (for parallel downloads or feature building).
+
+Max number of training samples (for quick debug runs).
+
+6. Documentation and UX polish
+
+Update root README.md:
+
+Add a “What’s new in Version 3” section listing:
+
+More datasets and features
+
+Stronger models and evaluations
+
+Better robustness and CLI
+
+Fixed dashboard routing.
+
+Add a “Quickstart (5 commands)” section that shows:
+
+Create environment
+
+Download sample data / run synthetic mode
+
+Build datasets
+
+Train a model
+
+Launch dashboard
+
+Update data/README.md:
+
+Include new files/columns you introduced (extra met variables, land cover, population, anomaly fields, etc.).
+
+Add a small “common pitfalls” section: e.g., partial downloads, missing keys.
+
+Update notebooks:
+
+Where needed, add cells that demonstrate new V3 features (e.g., new features in make_features_aqi, new model types and evaluation plots).
+
+Dashboard UX
+
+In app.py, add:
+
+A compact “Help / How to read this page” section on each tab.
+
+Clear labels for units (µg/m³, mol/m², etc.) and AQI categories.
+
+Option to download plotted data (CSV) from the app for a selected city/region/date range.
+
+7. How to present your final changes
+
+In your final answer to me:
+
+List all new/modified files, grouped by:
+
+Data & features
+
+Models & training
+
+HCHO / hotspots
+
+Streamlit & interface
+
+CLI & utilities
+
+Documentation
+
+Highlight briefly how you fixed the UI/Streamlit routing issue.
+
+Paste the full contents of these key updated files:
+
+src/webapp/app.py
+
+Any updated Streamlit config or artifact config that matters
+
+New CLI script (e.g., scripts/run_pipeline.py)
+
+Updated README.md and data/README.md
+
+Any major new model/config files (cnn_lstm_aqi.py, aqi_training.yaml if significantly changed)
+
+Make sure code blocks are clearly separated with filenames indicated so I can copy them into my repo if needed.

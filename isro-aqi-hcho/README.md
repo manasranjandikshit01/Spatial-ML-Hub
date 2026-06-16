@@ -5,6 +5,22 @@
 
 ---
 
+## What's New in V3
+
+| Area | Change |
+|------|--------|
+| **Feature Engineering** | Rolling means (3-day, 7-day per cell) · month/weekday sin-cos · 3×3 spatial context |
+| **Models** | `ConvLSTMCell` / `ConvLSTMModel` · `build_model(config)` factory |
+| **HCHO Pipeline** | Daily HCHO anomaly · hotspot persistence · GeoJSON cluster export · top-N regions CSV |
+| **Config** | `paths.yaml` extended with multi-year, dev_mode, storage_format, extra_features |
+| **CLI** | `scripts/run_pipeline.py` — single entry-point for all pipeline stages |
+| **Config utils** | `src/utils/config_utils.py` — YAML validation, nested-key access, default merging |
+| **Static layers** | `src/data/download_static_layers.py` — land cover, population, elevation stubs |
+| **Dashboard** | Help boxes on every page · unit labels · download buttons · FEATURE_META dict |
+| **Models README** | `models/README.md` — naming convention, loading instructions, reproduceability |
+
+---
+
 ## Overview
 
 This repository implements a two-objective ML/GIS pipeline that fuses multi-source
@@ -116,38 +132,43 @@ isro-aqi-hcho/
 │   └── 04_hcho_hotspots_and_fire.ipynb        # HCHO hotspot analysis
 ├── src/
 │   ├── data/
-│   │   ├── grid_definition.py        # 0.1° India grid
+│   │   ├── grid_definition.py          # 0.1° India grid
 │   │   ├── download_cpcb.py
 │   │   ├── download_tropomi.py
 │   │   ├── download_insat_aod.py
 │   │   ├── download_reanalysis.py
 │   │   ├── download_firms_fire.py
-│   │   ├── build_dataset_aqi.py      # AQI dataset builder (--synthetic flag)
-│   │   └── build_dataset_hcho.py     # HCHO dataset builder (--synthetic flag)
+│   │   ├── download_static_layers.py   # [V3] Land cover, population, elevation stubs
+│   │   ├── build_dataset_aqi.py        # AQI dataset builder (--synthetic flag)
+│   │   └── build_dataset_hcho.py       # HCHO dataset builder (--synthetic flag)
 │   ├── features/
-│   │   ├── make_features_aqi.py
-│   │   └── make_features_hcho.py
+│   │   ├── make_features_aqi.py        # [V3] + rolling means, temporal, spatial context
+│   │   ├── make_features_hcho.py       # [V3] + HCHO anomaly, persistence, GeoJSON
+│   │   └── add_static_features.py      # [V3] Merge static layers into feature matrix
 │   ├── models/
-│   │   ├── baseline_ml.py            # RF & GBM with GridSearchCV (V2)
-│   │   ├── cnn_lstm_aqi.py           # CNN-LSTM architecture + AQIDataset
-│   │   ├── train_aqi.py              # Training loop + hparam sweep (V2)
-│   │   └── evaluate_aqi.py           # Evaluation & plot generation
+│   │   ├── baseline_ml.py              # RF & GBM with GridSearchCV (V2)
+│   │   ├── cnn_lstm_aqi.py             # [V3] + ConvLSTMCell/Model + build_model()
+│   │   ├── train_aqi.py                # Training loop + hparam sweep (V2)
+│   │   └── evaluate_aqi.py             # Evaluation & plot generation
 │   ├── utils/
-│   │   ├── aqi_calculator.py         # Official CPCB Indian AQI formula
-│   │   └── logging_utils.py          # Centralised logging setup (V2)
+│   │   ├── aqi_calculator.py           # Official CPCB Indian AQI formula
+│   │   ├── config_utils.py             # [V3] YAML validation, nested-key helpers
+│   │   └── logging_utils.py            # Centralised logging setup (V2)
 │   ├── visualization/
 │   │   ├── plot_maps.py
 │   │   ├── plot_time_series.py
 │   │   └── plot_hotspots.py
 │   └── webapp/
-│       └── app.py                    # Streamlit dashboard (7 pages)
+│       └── app.py                      # [V3] Streamlit dashboard (7 pages + help/download)
 ├── models/
-│   ├── baseline/                     # Trained RF/GBM .joblib files
-│   └── cnn_lstm/                     # best_model.pt checkpoints
+│   ├── README.md                       # [V3] Model naming, loading, reproduceability
+│   ├── baseline/                       # Trained RF/GBM .joblib files
+│   └── cnn_lstm/                       # best_model.pt checkpoints
 ├── scripts/
+│   ├── run_pipeline.py                 # [V3] Top-level CLI for all pipeline stages
 │   ├── run_train_aqi.sh
 │   └── run_hcho_hotspots.sh
-└── logs/                             # Training log files (gitignored)
+└── logs/                               # Training log files (gitignored)
 ```
 
 ---
@@ -179,15 +200,46 @@ streamlit run src/webapp/app.py
 ```
 The dashboard auto-generates synthetic demo data on first launch.
 
+---
+
+## V3 Quick-Start (5 commands)
+
+All pipeline stages are now accessible via a single CLI entry-point:
+
+```bash
+cd isro-aqi-hcho
+
+# Full demo pipeline (no API keys needed)
+python scripts/run_pipeline.py run_all --synthetic
+
+# Or run stages individually:
+python scripts/run_pipeline.py build_datasets   --synthetic   # generate data
+python scripts/run_pipeline.py train_baseline                 # RF + GBM
+python scripts/run_pipeline.py train_deep       --synthetic   # CNN-LSTM
+python scripts/run_pipeline.py export_for_dashboard           # feature CSVs
+```
+
+See `python scripts/run_pipeline.py --help` (or `<command> --help`) for all options.
+
+---
+
 ### 1 — Generate synthetic demo data for notebooks & training
 ```bash
 cd isro-aqi-hcho
+# V3 single command:
+python scripts/run_pipeline.py build_datasets --synthetic
+
+# Or the original module calls:
 python -m src.data.build_dataset_aqi --synthetic
 python -m src.data.build_dataset_hcho --synthetic
 ```
 
 ### 2 — (Optional) Download real data
 ```bash
+python scripts/run_pipeline.py download_all \
+    --start 2019-01-01 --end 2022-12-31
+
+# Or individually:
 python -m src.data.download_cpcb   --start_date 2019-01-01 --end_date 2022-12-31
 python -m src.data.download_tropomi --start_date 2019-01-01 --end_date 2022-12-31
 python -m src.data.download_reanalysis --start_date 2019-01-01 --end_date 2022-12-31
@@ -198,6 +250,9 @@ python -m src.data.build_dataset_hcho
 
 ### 3 — Train baseline models
 ```bash
+python scripts/run_pipeline.py train_baseline
+
+# Or the original call:
 python -m src.models.baseline_ml \
     --input data/processed/aqi_training_dataset.csv \
     --output_dir models/baseline
@@ -206,15 +261,15 @@ python -m src.models.baseline_ml \
 python -m src.models.baseline_ml --hparam_search
 ```
 
-### 4 — Train CNN-LSTM
+### 4 — Train CNN-LSTM or ConvLSTM
 ```bash
-# Smoke-test (synthetic, fast)
-python -m src.models.train_aqi --synthetic
+# CNN-LSTM (default, config/aqi_training.yaml)
+python scripts/run_pipeline.py train_deep --synthetic
 
-# Full training
+# ConvLSTM — set model_type: convlstm in config/aqi_training.yaml then:
 python -m src.models.train_aqi --config config/aqi_training.yaml
 
-# Hyperparameter sweep (synthetic)
+# Hyperparameter sweep
 python -m src.models.train_aqi --hparam_sweep
 ```
 
@@ -238,7 +293,7 @@ All notebooks work with synthetic data out of the box.
 - Train split: 2019–2021 · Test split: 2022
 - Saved as `.joblib` files; metrics logged to `baseline_results.csv`
 
-### CNN-LSTM
+### CNN-LSTM (V2)
 | Component | Architecture |
 |-----------|-------------|
 | Input | `(B, T=7, C=13, H=30, W=30)` |
@@ -246,6 +301,21 @@ All notebooks work with synthetic data out of the box.
 | LSTM | 2-layer, 128 hidden units |
 | FC Head | 64 → H×W flat output |
 | Output | `(B, H, W)` — predicted PM2.5 grid |
+
+### ConvLSTM (V3)
+| Component | Architecture |
+|-----------|-------------|
+| Input | `(B, T=7, C=13, H=30, W=30)` |
+| ConvLSTM | 2 layers: 64→128 hidden channels, kernel 3×3 |
+| Refinement | Conv2D 128→64 + Dropout2d |
+| Prediction | Conv2D 64→1 (1×1 kernel) |
+| Output | `(B, H, W)` — predicted PM2.5 grid |
+
+Use `build_model(config)` to instantiate either model:
+```python
+config["model"]["model_type"] = "cnnlstm"   # or "convlstm"
+model = build_model(config)
+```
 
 - Training: Adam + ReduceLROnPlateau, early stopping (patience=10)
 - Automatic GPU acceleration (CUDA if available)
@@ -263,6 +333,36 @@ All notebooks work with synthetic data out of the box.
    in Punjab-Haryana and northeast India crop-residue burning zones
 5. **Wind transport** — ERA5 u10/v10 quivers are overlaid on hotspot maps to
    illustrate downwind transport of biomass burning emissions
+
+---
+
+## Debugging the Dashboard
+
+**Dashboard shows blank / spinning:**
+1. Check the workflow is running: `artifacts/isro-dashboard: web` should show "RUNNING".
+2. Confirm Streamlit config is correct: `.streamlit/config.toml` must have
+   `port = 25295` and `address = "0.0.0.0"`.
+3. If `data/processed/` is empty, the dashboard generates synthetic data on-the-fly.
+   This takes ~5–10 seconds — wait for the spinner to finish.
+
+**`ModuleNotFoundError`:**
+```bash
+cd isro-aqi-hcho        # always run from the project root
+pip install -r requirements.txt
+```
+
+**`FileNotFoundError` on config paths:**
+All configs are loaded with relative paths from `isro-aqi-hcho/`.
+Never run the dashboard from the repo root (`/home/runner/workspace/`).
+
+**Dashboard doesn't pick up new model results:**
+Streamlit caches data loaders with `@st.cache_data`. After training, either:
+- Click the ⋮ menu → **Clear cache** in the browser, or
+- Restart the workflow.
+
+**Port conflict on Replit:**
+The workflow is pinned to port 25295 in `artifacts/isro-dashboard/.replit-artifact/artifact.toml`.
+Do not change the port in `streamlit run` or `.streamlit/config.toml` without updating both.
 
 ---
 
