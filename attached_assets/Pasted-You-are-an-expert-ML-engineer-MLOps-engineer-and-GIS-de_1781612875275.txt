@@ -1,0 +1,326 @@
+You are an expert ML engineer, MLOps engineer, and GIS developer working inside the existing isro-aqi-hcho repo that you already created.
+Your new task: upgrade this project to Version 2 so it is robust, efficient, and competition‑ready for the ISRO hackathon.
+
+1. High‑level goals for Version 2
+
+Add complete, high‑quality Jupyter notebooks that demonstrate end‑to‑end workflows:
+
+Data exploration
+
+Model training & hyperparameter tuning
+
+HCHO hotspot analysis
+
+Strengthen and optimize the training code:
+
+Better data loaders
+
+Config‑driven training
+
+Logging & metrics
+
+Early stopping and basic hyperparameter search
+
+Improve the CNN‑LSTM or ConvLSTM implementation for AQI/PM2.5 prediction.
+
+Make the project production‑like:
+
+More robust error handling in data downloads and dataset builders
+
+Clear configuration via YAML
+
+Clean logging
+
+Upgrade all documentation:
+
+A new, detailed README.md in the repo root, describing the entire system
+
+A dataset README in the data/ folder (or data/README.md)
+
+An architecture diagram (described in Mermaid or as ASCII; I will later convert it to an image)
+
+When editing, reuse and improve the existing files, do not delete useful code unless you replace it with something better and cleaner.
+
+2. Jupyter notebooks to create or improve
+
+Create actual .ipynb notebooks in the notebooks/ folder with real, runnable code (not just placeholders). Assume the user may initially run them with synthetic/demo data but they should work once real data is downloaded.
+
+notebooks/01_explore_cpcb.ipynb
+
+Load data/interim/cpcb_daily.csv (or the file created by download_cpcb.py / build_dataset_aqi.py).
+
+Show:
+
+Station spatial distribution (scatter plot on India map)
+
+Time series of PM2.5 / AQI for a few major cities
+
+Missing‑value analysis and basic statistics
+
+Example code snippet that demonstrates how AQI is computed from pollutants via the aqi_calculator module.
+
+notebooks/02_explore_satellite_reanalysis.ipynb
+
+Load gridded satellite + met features (grid_daily_features.csv or equivalent).
+
+Visualize:
+
+Example NO2, AOD, and wind maps for a selected day
+
+Correlations between PM2.5 (ground) and satellite features
+
+Seasonal patterns (monsoon vs post‑monsoon) for Indo‑Gangetic Plain.
+
+notebooks/03_train_baseline_and_cnn_lstm.ipynb
+
+Use the same code as baseline_ml.py and train_aqi.py, but show:
+
+How to build the training dataset (aqi_training_dataset.csv)
+
+How to train baseline models (Random Forest, Gradient Boosting) with cross‑validation
+
+How to call the CNN‑LSTM trainer, log metrics, and visualize outputs:
+
+Loss curves
+
+Observed vs predicted scatter plots
+
+Example predicted vs observed AQI maps for a selected day.
+
+Include a simple hyperparameter tuning loop for Random Forest (e.g., grid over n_estimators, max_depth) and for CNN‑LSTM (e.g., learning rate, channels, number of layers).
+
+notebooks/04_hcho_hotspots_and_fire.ipynb
+
+Load hcho_fire_daily_grid.csv plus any seasonal aggregations created by build_dataset_hcho.py.
+
+Demonstrate:
+
+Seasonal mean HCHO maps
+
+90th/95th percentile hotspot identification
+
+DBSCAN/KMeans clustering of hotspot regions
+
+Time‑lag correlation plots between HCHO and fire counts
+
+Example wind vector overlay and interpretation.
+
+In each notebook, add short markdown explanations of what each step shows and why it’s relevant to the problem statement.
+
+3. Strengthen and optimize the training code
+
+Improve and/or extend the following modules:
+
+src/models/baseline_ml.py
+
+Refactor into functions/classes:
+
+load_aqi_training_data(config)
+
+train_baseline_models(config)
+
+evaluate_baseline_models(config)
+
+Support:
+
+Train/validation/test split by time (e.g., config defines train years and test years)
+
+Option to group split by city to test generalization
+
+Add:
+
+A small hyperparameter grid search using sklearn.model_selection.GridSearchCV or a manual loop
+
+Saving and loading trained models with joblib
+
+Logging key metrics to a simple CSV (baseline_results.csv) in data/processed/.
+
+src/models/cnn_lstm_aqi.py and src/models/train_aqi.py
+
+Ensure the CNN‑LSTM is fully working and efficient:
+
+Use a clear SpatialEncoder CNN, then an LSTM or ConvLSTM over time.
+
+Data loading:
+
+Implement a torch.utils.data.Dataset class that reads the gridded feature files and yields (X_seq, y) pairs shaped (T, C, H, W) → y PM2.5 grid (or AQI grid).
+
+Training:
+
+Read training hyperparameters from config/aqi_training.yaml (batch size, learning rate, epochs, sequence length, optimizer choice).
+
+Add:
+
+Early stopping on validation loss
+
+Model checkpointing (best model saved)
+
+Learning rate scheduler
+
+Option to run on GPU if available.
+
+Add a function to export predicted daily AQI maps for a chosen period into NetCDF/GeoTIFF and a CSV index for easy loading by the Streamlit app.
+
+Logging & error handling
+
+Introduce a simple logging setup (e.g., src/utils/logging_utils.py) and use it in:
+
+download_*.py modules
+
+build_dataset_*.py
+
+train_aqi.py, evaluate_aqi.py
+
+Add basic try/except with meaningful messages for network errors, missing files, etc.
+
+4. Documentation upgrades
+
+Rewrite the root README.md as a full, polished document.
+It should include:
+
+Project title and one‑paragraph overview tied to the ISRO problem statement:
+“Development of Surface AQI & Identification of HCHO Hotspots over India using Satellite Data.”
+
+Clear Objectives:
+
+Objective‑1: Predict and map surface AQI using satellite + met data.
+
+Objective‑2: Detect HCHO hotspots related to biomass burning using satellite + fire + wind data.
+
+High‑level architecture description (data sources → pipelines → models → outputs → Streamlit dashboard).
+
+Detailed sections:
+
+Data Sources with bullet points and official links:
+
+CPCB CAAQM ground stations
+
+Sentinel‑5P TROPOMI NO2/SO2/CO/O3/HCHO
+
+INSAT‑3D AOD
+
+ERA5/IMDAA/MERRA‑2 reanalysis
+
+MODIS/VIIRS FIRMS fire data
+
+Repository structure – a tree diagram with short explanations of each major folder.
+
+Installation – environment creation commands (conda and pip) and how to set environment variables/API keys if needed.
+
+Step‑by‑step usage – from zero to dashboard:
+
+Download data (calling the download_*.py scripts)
+
+Build datasets
+
+Train models
+
+Run notebooks for analysis
+
+Start the Streamlit app
+
+Model details – short explanation of baseline vs CNN‑LSTM.
+
+HCHO hotspot methodology – short explanation of percentile/clustering/correlation.
+
+Limitations and future improvements – e.g., adding more years, uncertainty estimates, better spatial models, etc.
+
+Architecture diagram
+
+Add a section to README.md with a Mermaid diagram that shows the full workflow. For example:
+
+CPCB data + TROPOMI + INSAT AOD + Reanalysis → AQI Dataset Builder → Baseline Models and CNN‑LSTM → Predicted AQI Grid → Streamlit Dashboard.
+
+TROPOMI HCHO + FIRMS Fire + Reanalysis → HCHO Dataset Builder → Hotspot Detection + Correlation → Maps & Timeseries → Streamlit Dashboard.
+
+The Mermaid code should be valid and easy to render on GitHub/other tools.
+
+Dataset README
+
+Create data/README.md (or if it exists, edit it) with:
+
+Description of each subfolder: raw/, interim/, processed/.
+
+For each key CSV/NetCDF file (e.g., cpcb_daily.csv, grid_daily_features.csv, aqi_training_dataset.csv, hcho_fire_daily_grid.csv), include:
+
+What script produces it
+
+What its schema/column names are
+
+How it is used (training, mapping, hotspots, etc.)
+
+A step‑by‑step recipe to go from no data at all to fully built processed datasets, referencing the exact Python commands:
+
+Download CPCB data
+
+Download satellite data
+
+Download reanalysis and fire data
+
+Run dataset builders
+
+Note where users must supply credentials/API keys (e.g., ERA5 CDS, Earth Engine).
+
+Inline comments and docstrings
+
+Go through the main modules and:
+
+Add or improve docstrings for public functions and classes.
+
+Add comments explaining key assumptions (grid resolution, date ranges, quality masks).
+
+Make sure type hints are used where reasonable.
+
+5. Performance and optimization
+
+Where possible, vectorize heavy operations in dataset builders using pandas and xarray instead of slow Python loops.
+
+If the CNN‑LSTM currently loads all data into memory, refactor to iterate over chunks or use an on‑the‑fly dataset to prevent memory issues.
+
+Add configuration options for:
+
+Subsetting the domain (e.g., only Indo‑Gangetic Plain) for quick experiments.
+
+Downsampling the temporal range (e.g., one year) for faster development runs.
+
+6. Streamlit dashboard enhancements (if needed)
+
+Without breaking the current app, make small but meaningful improvements:
+
+Add controls to:
+
+Switch between baseline and CNN‑LSTM predictions (if both outputs are saved).
+
+Toggle between different pollutants and AQI categories.
+
+Show model performance metrics for the currently selected model and period.
+
+Add short text explanations on each page linking the visualization to the ISRO problem statement.
+
+7. How to present your final answer
+
+List all files you changed or created, grouped by:
+
+Notebooks
+
+Models/training
+
+Data/dataset builders
+
+Documentation
+
+Streamlit app
+
+For each group, briefly summarize what you improved.
+
+Paste the full content of new/updated key files in your answer (especially:
+
+README.md
+
+data/README.md
+
+notebooks/03_train_baseline_and_cnn_lstm.ipynb as a JSON snippet or at least the full Python cells in order
+
+Updated train_aqi.py, cnn_lstm_aqi.py, and any new Dataset class).
+
+Use clear headings and code fences so I can copy the files easily. Do not skip important implementation details.

@@ -1,5 +1,5 @@
-
-# AQI Model Training Configuration
+# AQI Model Training Configuration — V2
+# ========================================
 
 model:
   type: "cnn_lstm"          # "baseline" | "cnn_lstm"
@@ -28,8 +28,29 @@ targets:
   - pm25_target
   - aqi_target
 
+# ---------------------------------------------------------------------------
+# Domain subsetting (optional — comment out to use full India grid)
+# ---------------------------------------------------------------------------
+domain:
+  # Uncomment one of the presets for quick regional experiments:
+  # name: "Indo-Gangetic Plain"
+  # lat_min: 23.0
+  # lat_max: 30.0
+  # lon_min: 75.0
+  # lon_max: 90.0
+
+  # name: "Full India"
+  # lat_min: 8.0
+  # lat_max: 37.5
+  # lon_min: 68.0
+  # lon_max: 97.5
+
+# ---------------------------------------------------------------------------
 # Baseline ML settings
+# ---------------------------------------------------------------------------
 baseline:
+  train_end: "2021-12-31"
+  test_start: "2022-01-01"
   models:
     - name: "RandomForest"
       params:
@@ -46,12 +67,26 @@ baseline:
         random_state: 42
   cv_folds: 5
 
+  # Hyperparameter search grids (used when --hparam_search flag is set)
+  hparam_grids:
+    RandomForest:
+      n_estimators: [100, 200, 300]
+      max_depth: [8, 12, 15, null]
+      min_samples_split: [4, 8]
+    GradientBoosting:
+      n_estimators: [100, 200]
+      max_depth: [4, 6, 8]
+      learning_rate: [0.03, 0.05, 0.10]
+
+# ---------------------------------------------------------------------------
 # CNN-LSTM settings
+# ---------------------------------------------------------------------------
 cnn_lstm:
   spatial:
     img_height: 30           # Grid cells in latitude dimension
     img_width: 30            # Grid cells in longitude dimension
-    in_channels: 11          # Number of feature channels
+    in_channels: 11          # Number of feature channels (auto-derived in code)
+
   architecture:
     cnn_filters: [32, 64]
     cnn_kernel: 3
@@ -59,17 +94,29 @@ cnn_lstm:
     lstm_layers: 2
     dropout: 0.3
     fc_hidden: 64
+
   training:
     epochs: 50
     batch_size: 16
     learning_rate: 0.001
     weight_decay: 0.0001
-    patience: 10             # Early stopping patience
-    scheduler_step: 10
-    scheduler_gamma: 0.5
-    val_split: 0.15
-    test_split: 0.15
+    patience: 10             # Early stopping patience (epochs)
+    scheduler: "plateau"     # "step" | "plateau"
+    scheduler_step: 5        # StepLR: step interval; ReduceLROnPlateau: patience
+    scheduler_gamma: 0.5     # LR decay factor
 
+    val_split: 0.15          # Fraction of data held out for validation
+    test_split: 0.15         # Fraction of data held out for test
+
+  # Hyperparameter sweep grid (used when --hparam_sweep flag is set)
+  hparam_sweep:
+    learning_rate: [0.001, 0.0005, 0.0001]
+    dropout: [0.2, 0.3, 0.4]
+    lstm_hidden: [64, 128, 256]
+
+# ---------------------------------------------------------------------------
+# Evaluation & output
+# ---------------------------------------------------------------------------
 evaluation:
   metrics:
     - rmse
@@ -78,3 +125,4 @@ evaluation:
     - pearson_r
   generate_maps: true
   map_output_dir: "data/processed/aqi_maps"
+  export_predictions_csv: "data/processed/cnn_lstm_predictions.csv"
